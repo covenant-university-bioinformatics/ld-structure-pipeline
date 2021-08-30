@@ -39,16 +39,16 @@ module.exports.validateFormData = async function (formdata) {
   return schema.validate(dataToValidate);
 }
 
-module.exports.saveJobsToDB = async function (file, body, user) {
+module.exports.saveJobsToDB = async function (req) {
   try {
     const newJob = new LDStructureDB({
       jobUniqueID: Date.now(),
-      jobName: body.job_name,
-      inputFilepath: file.path,
-      markerName: body.marker_name,
-      rSquared: body.r_squared,
+      jobName: req.body.job_name,
+      inputFilepath: req.file.path,
+      markerName: req.body.marker_name,
+      rSquared: req.body.r_squared,
       dateSubmitted: new Date(),
-      username: user.username,
+      username: req.user.username,
     });
 
     const savedJob = await newJob.save();
@@ -99,17 +99,17 @@ module.exports.createJobDir = async function () {
   return dir;
 }
 
-module.exports.extractSnpsFromInputFile = async function (filepath, snps_column, outputDir, delimiter) {
+module.exports.extractSnpsFromInputFile = async function (req, outputDir, delimiter) {
   let snpsFilepath = outputDir + 'snps_file.txt';
-
+  
   const readline = createInterface({
-    input: createReadStream(filepath),
+    input: createReadStream(req.file.path),
     crlfDelay: Infinity
   });
   i = 0;
   readline.on('line', async (line) => {
     if (line.trim().length !== 0) {
-      let snpsid = line.split(delimiter)[snps_column - 1];
+      let snpsid = line.split(delimiter)[req.body.marker_name - 1];
       if (i > 0) {
         snpsid = snpsid + '\n';
         await writeOutputToFile(snpsid, snpsFilepath);
@@ -219,8 +219,8 @@ module.exports.readFewProcessedFile = async function (filepath) {
 
 async function updateJobDocument(filter, update) {
   try {
+    await LDStructureDB.findOneAndUpdate(filter, update, { new: true });
     console.log('Status: ' + update.status)
-    return await LDStructureDB.findOneAndUpdate(filter, update, { new: true });
   } catch (error) {
     console.log(error);
   }
