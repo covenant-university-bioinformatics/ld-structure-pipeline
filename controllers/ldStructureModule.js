@@ -39,10 +39,10 @@ module.exports.validateFormData = async function (formdata) {
   return schema.validate(dataToValidate);
 }
 
-module.exports.saveJobsToDB = async function (req) {
+module.exports.saveJobsToDB = async function (req, jobUniqueID) {
   try {
     const newJob = new LDStructureDB({
-      jobUniqueID: Date.now(),
+      jobUniqueID: jobUniqueID,
       jobName: req.body.job_name,
       inputFilepath: req.file.path,
       markerName: req.body.marker_name,
@@ -91,25 +91,25 @@ module.exports.deleteJobFromDB = async function (jobUniqueID) {
   }
 }
 
-module.exports.createJobDir = async function () {
-  let dir = './Jobs/Job' + Date.now() + '/';
+module.exports.createJobDir = async function (jobUniqueID) {
+  let dir = './Jobs/Job' + jobUniqueID + '/';
   fs.mkdir(dir, { recursive: true }, (err) => {
     if (err) return err;
   });
   return dir;
 }
 
-module.exports.extractSnpsFromInputFile = async function (req, outputDir, delimiter) {
+module.exports.extractSnpsFromInputFile = async function (filepath, marker_name, outputDir, delimiter) {
   let snpsFilepath = outputDir + 'snps_file.txt';
   
   const readline = createInterface({
-    input: createReadStream(req.file.path),
+    input: createReadStream(filepath),
     crlfDelay: Infinity
   });
   i = 0;
   readline.on('line', async (line) => {
     if (line.trim().length !== 0) {
-      let snpsid = line.split(delimiter)[req.body.marker_name - 1];
+      let snpsid = line.split(delimiter)[marker_name - 1];
       if (i > 0) {
         snpsid = snpsid + '\n';
         await writeOutputToFile(snpsid, snpsFilepath);
@@ -144,23 +144,13 @@ module.exports.getFileDelimiter = async function (filepath) {
   return delimiter;
 }
 
-module.exports.processExtractedSnps = async function (filepath, r2_value, outputDir, jobResult) {
-
-  const jobUniqueID = jobResult.jobUniqueID;
-  const filter = { jobUniqueID: jobUniqueID }
-  var update = '';
-
+module.exports.processExtractedSnps = async function (filepath, r2_value, processedFilepath, unProcessedFilepath) {
+  let feedback = '';
   try {
-    let processedFilepath = outputDir + 'processed.txt';
-    let unProcessedFilepath = outputDir + 'unProcessed.txt';
-
     if (r2_value <= 0 || r2_value.length < 0) {
       r2_value = 0.9;
     }
-
-    update = { status: 'RUNNING', outputFilepath: processedFilepath }
-    await updateJobDocument(filter, update)
-
+    
     const readline = createInterface({
       input: createReadStream(filepath),
       crlfDelay: Infinity
@@ -170,13 +160,6 @@ module.exports.processExtractedSnps = async function (filepath, r2_value, output
 
     i = 0;
     for await (const snpsid of readline) {
-      ['SIGINT', 'SIGTERM', 'SIGQUIT', 'SIGHUP', 'SIGBREAK']
-        .forEach(signal => process.on(signal, async() => {
-          update = { status: 'ABORTED', outputFilepath: processedFilepath }
-          await updateJobDocument(filter, update)
-          process.exit();
-        }));
-
       if (snpsid.trim().length !== 0) {
         await processSnpsID(snpsid, processedFilepath, unProcessedFilepath, r2_value);
       }
@@ -185,14 +168,13 @@ module.exports.processExtractedSnps = async function (filepath, r2_value, output
       await sleep(10);
     }
 
-    update = { status: 'COMPLETED' }
-    await updateJobDocument(filter, update)
+    feedback = 'COMPLETED';
 
   } catch (err) {
-    update = { status: 'FAILED' }
-    await updateJobDocument(filter, update)
     console.log(err);
+    feedback = err;
   }
+  return feedback;
 }
 
 module.exports.readFewProcessedFile = async function (filepath) {
@@ -217,7 +199,7 @@ module.exports.readFewProcessedFile = async function (filepath) {
   return fewData;
 }
 
-async function updateJobDocument(filter, update) {
+module.exports.updateJobDocument = async function (filter, update) {
   try {
     await LDStructureDB.findOneAndUpdate(filter, update, { new: true });
     console.log('Status: ' + update.status)

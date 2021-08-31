@@ -8,47 +8,29 @@ const upload = multer({ dest: './Jobs/file_uploads/' })
 
 const { Queue } = require('bullmq');
 const queue = new Queue(config.queueName);
+const { v4: uuidv4 } = require('uuid');
 
 router.post('/jobs', authenticateToken, upload.single('file'), async (req, res) => {
-  // Add jobs to the queue
-  await queue.add(req.body.job_name);
+  // Validate input file
+  if (!await LDSController.isFileValid(req.file)) return res.status(400).send('Please upload a valid file');
 
-  // Process the jobs in workers
-  const { Worker } = require('bullmq');
-  const worker = new Worker(config.queueName, async job => {
-    if (job.name === req.body.job_name) {
-      // Validate input file
-      if (!await LDSController.isFileValid(req.file)) return res.status(400).send('Please upload a valid file');
+  // Validate other form data
+  const { error } = await LDSController.validateFormData(req.body);
+  if (error) return res.status(400).send(error.details[0].message);
 
-      // Validate other form data
-      const { error } = await LDSController.validateFormData(req.body);
-      if (error) return res.status(400).send(error.details[0].message);
+  // Create job unique id 
+  const jobUniqueID = uuidv4();
 
-      // Save job parameters to DB
-      const jobResult = await LDSController.saveJobsToDB(req);
-      if (jobResult.errors) return res.status(400).send(jobResult.message);
+  // Save job parameters to DB
+  const jobResult = await LDSController.saveJobsToDB(req, jobUniqueID);
+  if (jobResult.errors) return res.status(400).send(jobResult.message);
 
-      // Process job
-      let outputDir = await LDSController.createJobDir();
-      let delimiter = await LDSController.getFileDelimiter(req.file.path);
-      let snpsFilepath = await LDSController.extractSnpsFromInputFile(req, outputDir, delimiter);
-      let result = await LDSController.processExtractedSnps(snpsFilepath, req.body.r_squared, outputDir, jobResult);
-      // res.send(result);
-    }
-  }, 
-  {
-    connection: config.connection,
-    concurrency: config.concurrency,
-  });
-
-  // Listen to jobs for completion
-  worker.on("completed", (job) => {
-    console.log(`Completed job ${job.id} successfully`)
-    res.send('done processing');
-  });
-  worker.on("failed", (job, err) => {
-    console.log(`Failed job ${job.id} with ${err}`)
-    res.send('error processing', err);
+  // Add job to the queue
+  await queue.add(req.body.job_name, {
+    jobUniqueID: jobUniqueID,
+    filepath: req.file.path,
+    marker_name: req.body.marker_name, 
+    r_squared: req.body.r_squared,
   });
 
 });
@@ -103,24 +85,5 @@ function authenticateToken(req, res, next) {
   //     next() 
   // })
 }
-
-const { QueueEvents } = require('bullmq');
-const queueEvents = new QueueEvents(config.queueName);
-
-queueEvents.on('waiting', ({ jobId }) => {
-    console.log(`A job with ID ${jobId} is waiting`);
-});
-
-queueEvents.on('active', ({ jobId, prev }) => {
-    console.log(`Job ${jobId} is now active; previous status was ${prev}`);
-});
-
-queueEvents.on('completed', ({ jobId, returnvalue }) => {
-    console.log(`${jobId} has completed and returned ${returnvalue}`);
-});
-
-queueEvents.on('failed', ({ jobId, failedReason }) => {
-    console.log(`${jobId} has failed with reason ${failedReason}`);
-});
 
 module.exports = router;
