@@ -1,6 +1,7 @@
 const { Worker } = require('bullmq');
 const path = require('path');
 const config = require('./config')
+const LDSController = require('../controllers/ldStructureModule');
 const processorFile = path.join(__dirname, 'processor.js');
 
 module.exports.worker = function () {
@@ -11,23 +12,17 @@ module.exports.worker = function () {
     });
 
     // Listen to jobs for different events
-    worker.on("completed", (job) => {
+    worker.on("completed", async (job) => {
+        const filter = { jobUniqueID: job.data.jobUniqueID }
+        var update = { status: 'COMPLETED' }
+        await LDSController.updateJobDocument(filter, update)
         console.log(`Completed job ${job.id} successfully`)
     });
 
-    worker.on("failed", (job, err) => {
+    worker.on("failed", async (job, err) => {
+        const filter = { jobUniqueID: job.data.jobUniqueID }
+        var update = { status: 'FAILED' }
+        await LDSController.updateJobDocument(filter, update)
         console.log(`Failed job ${job.id} with ${err}`)
-    });
-    
-    worker.on("wait", (job) => {
-        console.log(`A job with ID ${job.id} is waiting`)
-    });
-
-    worker.on("progress", (job) => {
-        console.log(`Job ${job.id} is in progress`)
-    });
-
-    worker.on('error', (err) => {
-        console.error(err);
     });
 }

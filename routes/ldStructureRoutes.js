@@ -33,6 +33,7 @@ router.post('/jobs', authenticateToken, upload.single('file'), async (req, res) 
     r_squared: req.body.r_squared,
   });
 
+  return res.status(200).json(jobUniqueID);
 });
 
 router.get('/jobs', authenticateToken, async (req, res) => {
@@ -74,16 +75,17 @@ function authenticateToken(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1]
   if (token == null) return res.sendStatus(401)
 
-  const jwt_decode = require('jwt-decode');
-  req.user = jwt_decode(token);
-  next()
+  // const jwt_decode = require('jwt-decode');
+  // req.user = jwt_decode(token);
+  // console.log(req.user)
+  // next()
 
-  // jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-  //     console.log(err)
-  //     if (err) return res.sendStatus(403)
-  //     req.user = user
-  //     next() 
-  // })
+  jwt.verify(token, process.env.JWT_KEY, (err, user) => {
+    console.log(err)
+    if (err) return res.sendStatus(403)
+    req.user = user
+    next() 
+  })
 }
 
 module.exports = router;
