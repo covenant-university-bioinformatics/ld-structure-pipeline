@@ -1,2 +1,3 @@
-node_modules/
-Jobs/
+node_modules
+Jobs
+.idea

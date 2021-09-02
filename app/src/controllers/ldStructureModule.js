@@ -92,7 +92,8 @@ module.exports.deleteJobFromDB = async function (jobUniqueID) {
 }
 
 module.exports.createJobDir = async function (jobUniqueID) {
-  let dir = './Jobs/Job' + jobUniqueID + '/';
+  // let dir = './Jobs/Job' + jobUniqueID + '/';
+  let dir = '/pv/analysis/' + jobUniqueID + '/';
   fs.mkdir(dir, { recursive: true }, (err) => {
     if (err) return err;
   });

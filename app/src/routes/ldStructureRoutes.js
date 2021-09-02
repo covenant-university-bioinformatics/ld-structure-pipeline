@@ -1,13 +1,23 @@
+const fs = require("fs");
+
 const express = require('express');
 const router = express.Router()
 const LDSController = require('../controllers/ldStructureModule');
 const config = require('./config')
 
 const multer = require('multer')
-const upload = multer({ dest: './Jobs/file_uploads/' })
+
+if (!fs.existsSync('/tmp/summaryStats')) {
+  fs.mkdirSync('/tmp/summaryStats', { recursive: true });
+}
+// const upload = multer({ dest: './Jobs/file_uploads/' })
+const upload = multer({ dest: '/tmp/summaryStats/' })
 
 const { Queue } = require('bullmq');
-const queue = new Queue(config.queueName);
+const queue = new Queue(config.queueName, {
+  connection: config.connection,
+  // limiter: { groupKey: config.limiter.groupKey },
+});
 const { v4: uuidv4 } = require('uuid');
 
 router.post('/jobs', authenticateToken, upload.single('file'), async (req, res) => {

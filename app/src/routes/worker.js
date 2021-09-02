@@ -3,7 +3,7 @@ const path = require('path');
 const config = require('./config')
 const LDSController = require('../controllers/ldStructureModule');
 const processorFile = path.join(__dirname, 'processor.js');
-
+console.log(config);
 module.exports.worker = function () {
     // Process the jobs in workers
     const worker = new Worker(config.queueName, processorFile, {

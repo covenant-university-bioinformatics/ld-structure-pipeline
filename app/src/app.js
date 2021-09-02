@@ -13,7 +13,7 @@ const ldStructureRouter = require('./routes/ldStructureRoutes');
 app.use('/api/ldstructure', ldStructureRouter);
 
 // middleware to serve /jobs directory to /jobs request
-app.use('/jobs', express.static(__dirname + '/jobs')); 
+app.use('/jobs', express.static(__dirname + '/jobs'));
 
 // get server port number or use 3000 if no port has been set
 const port = process.env.PORT || 3000
