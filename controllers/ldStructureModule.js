@@ -92,7 +92,7 @@ module.exports.deleteJobFromDB = async function (jobUniqueID) {
 }
 
 module.exports.createJobDir = async function (jobUniqueID) {
-  let dir = './Jobs/Job' + jobUniqueID + '/';
+  const dir = './Jobs/Job' + jobUniqueID + '/';
   fs.mkdir(dir, { recursive: true }, (err) => {
     if (err) return err;
   });
@@ -206,6 +206,16 @@ module.exports.updateJobDocument = async function (filter, update) {
   } catch (error) {
     console.log(error);
   }
+}
+
+module.exports.deleteJobDir = async function (jobUniqueID) {
+  const dir = './Jobs/Job' + jobUniqueID;
+  fs.rmdir(dir, { recursive: true }, (err) => {
+    if (err) {
+      throw err;
+    }
+    console.log(`${dir} is deleted!`);
+  });
 }
 
 async function writeOutputFileHeader(processedFilepath) {

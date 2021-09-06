@@ -4,6 +4,7 @@ const cors = require('cors');
 const worker = require('./routes/worker');
 worker.worker();
 
+// console.log(process.env)
 // middlewares to use [json in formbody, cors]
 app.use(express.json());
 app.use(cors());
