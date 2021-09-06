@@ -209,6 +209,16 @@ module.exports.updateJobDocument = async function (filter, update) {
   }
 }
 
+module.exports.deleteJobDir = async function (jobUniqueID) {
+  const dir = './Jobs/Job' + jobUniqueID;
+  fs.rmdir(dir, { recursive: true }, (err) => {
+    if (err) {
+      throw err;
+    }
+    console.log(`${dir} is deleted!`);
+  });
+}
+
 async function writeOutputFileHeader(processedFilepath) {
   const fileHeader = "Variant_1 \t Location \t Consequence \t Variant_2 \t Location \t Consequence \t R_Squared \t D_Prime \n";
   await writeOutputToFile(fileHeader, processedFilepath);

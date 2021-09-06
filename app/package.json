@@ -15,6 +15,7 @@
     "express": "^4.17.1",
     "file-type": "^16.5.2",
     "joi": "^17.4.2",
+    "jsonwebtoken": "^8.5.1",
     "jwt-decode": "^3.1.2",
     "mime-types": "^2.1.32",
     "mongodb": "^4.0.1",
