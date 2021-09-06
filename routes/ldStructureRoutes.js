@@ -4,14 +4,13 @@ const LDSController = require('../controllers/ldStructureModule');
 const config = require('./config')
 const { Queue } = require('bullmq');
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
 
 // ========================================================================
 // Create job unique id 
 let jobUniqueID = '';
 const queue = new Queue(config.queueName);
 
-
-const multer = require('multer')
 const storage = multer.diskStorage({
   destination: async function (req, file, cb) {
     jobUniqueID = uuidv4();
