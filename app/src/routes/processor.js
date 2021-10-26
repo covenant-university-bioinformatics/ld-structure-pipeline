@@ -6,7 +6,7 @@ module.exports = async (job) => {
     // Create job output files
     let processedFilepath = job.data.outputDir + 'processed.txt';
     let unProcessedFilepath = job.data.outputDir + 'unProcessed.txt';
-s
+    
     // Update job status
     const filter = { jobUniqueID: job.data.jobUniqueID }
     var update = { status: 'RUNNING', outputFilepath: processedFilepath }

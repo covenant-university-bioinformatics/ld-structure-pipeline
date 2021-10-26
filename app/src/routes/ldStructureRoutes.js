@@ -71,7 +71,7 @@ router.get('/jobs/:jobUniqueID', authenticateToken, async (req, res) => {
   if (result.errors) return res.status(400).send(result.message);
 
   result = result.filter(job => job.username === req.user.username)
-
+  
   const fewOutput = await LDSController.readFewProcessedFile(result[0].outputFilepath);
   if (fewOutput.errors) return res.status(400).send(fewOutput.message);
   res.send(fewOutput);
@@ -103,17 +103,17 @@ function authenticateToken(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1]
   if (token == null) return res.sendStatus(401)
 
-  // const jwt_decode = require('jwt-decode');
-  // req.user = jwt_decode(token);
+  const jwt_decode = require('jwt-decode');
+  req.user = jwt_decode(token);
   // console.log(req.user)
-  // next()
+  next()
 
-  jwt.verify(token, process.env.JWT_KEY, (err, user) => {
-    console.log(err)
-    if (err) return res.sendStatus(403)
-    req.user = user
-    next() 
-  })
+  // jwt.verify(token, process.env.JWT_KEY, (err, user) => {
+  //   console.log(err)
+  //   if (err) return res.sendStatus(403)
+  //   req.user = user
+  //   next() 
+  // })
 }
 
 module.exports = router;

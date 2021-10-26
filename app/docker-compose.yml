@@ -1,0 +1,36 @@
+version: '3'
+services:
+  lds_app:
+    container_name: ldstructure
+    restart: always
+    build: .
+    ports:
+      - '3000:3000'
+    links:
+      - mongo
+      - redis
+    networks:
+      - app-tier
+  mongo:
+    container_name: mongo
+    image: mongo
+    ports:
+      - '27017:27017'
+    networks:
+      - app-tier
+    volumes:
+      - mongodata:/data/db
+  redis:
+    container_name: redis
+    image: 'redis'
+    ports:
+    - '6379:6379'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - app-tier
+networks:
+  app-tier:
+    driver: bridge
+volumes:
+  mongodata:  
